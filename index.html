@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html ng-app="userApp">
+
+<head>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f5fa;
+            margin: 0;
+        }
+        
+        .user-management {
+            display: flex;
+            width: 100%;
+        }
+        
+        .container {
+            width: 70%;
+            margin: 0;
+            text-align: left;
+        }
+        
+        .user-table-row {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        
+        .user-table-row:hover {
+            background: #f0f0f0;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .user-table-header {
+            font-weight: bold;
+        }
+        
+        .user-table-body {
+            background: #ddd;
+        }
+        
+        .user-form-block {
+            width: 30%;
+        }
+        
+        .form-container {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-container h2 {
+            margin-top: 0;
+        }
+        
+        .form-group {
+            margin-bottom: 10px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        
+        .user-form-error {
+            color: red;
+            font-size: 12px;
+        }
+        
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .message-error {
+            background: #ffb3b3;
+        }
+        
+        .message-success {
+            background: #b3ffb3;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: #2950ff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #ccc;
+        }
+        
+        .w-20 {
+            width: 20%;
+        }
+        
+        .w-25 {
+            width: 25%;
+        }
+        
+        .w-15 {
+            width: 15%;
+        }
+    </style>
+</head>
+
+<body>
+    <div ng-controller="UserController" class="user-management">
+        <div class="container">
+            <div style="padding: 20px;">
+                <div class="table-header">
+                    <h2>User List</h2>
+                    <button class="btn btn-primary" ng-click="toggleForm()">{{ showForm ? 'Close Form' : 'Add New User' }}</button>
+                </div>
+                <div class="user-table-row user-table-header">
+                    <div class="w-20">Username</div>
+                    <div class="w-20">First Name</div>
+                    <div class="w-20">Last Name</div>
+                    <div class="w-25">Email</div>
+                    <div class="w-15">Type</div>
+                </div>
+                <div class="user-table-row user-table-body" ng-repeat="u in users track by u.id" ng-click="edit(u)">
+                    <div class="w-20">{{u.username}}</div>
+                    <div class="w-20">{{u.first_name}}</div>
+                    <div class="w-20">{{u.last_name}}</div>
+                    <div class="w-25">{{u.email}}</div>
+                    <div class="w-15">{{u.user_type}}</div>
+                </div>
+            </div>
+        </div>
+        <div ng-if="showForm" class="user-form-block">
+            <div style="padding: 20px;">
+                <h1>User Management</h1>
+                <div class="form-container">
+                    <h2>{{ editMode ? 'Edit User' : 'Create User' }}</h2>
+                    <form name="userForm" ng-submit="save()">
+                        <div class="form-group">
+                            <label>Username*</label>
+                            <input type="text" ng-model="user.username" required>
+                        </div>
+                        <div class="form-group">
+                            <label>First name*</label>
+                            <input type="text" ng-model="user.first_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last name*</label>
+                            <input type="text" ng-model="user.last_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email*</label>
+                            <input type="email" ng-model="user.email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Type*</label>
+                            <select ng-model="user.user_type" required>
+                              <option value="Administrator">Administrator</option>
+                              <option value="User">User</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Password*</label>
+                            <input type="password" ng-model="user.password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password*</label>
+                            <input type="password" ng-model="user.confirmPassword" required>
+                            <div class="user-form-error" ng-show="user.password !== user.confirmPassword">Passwords do not match.</div>
+                        </div>
+                        <button class="btn btn-primary" type="submit">{{ editMode ? 'Save' : 'Create' }}</button>
+                        <button class="btn btn-secondary" type="button" ng-click="reset()">Reset</button>
+                        <div class="message message-error" ng-if="message && message.indexOf('unique') > -1">{{message}}</div>
+                        <div class="message message-success" ng-if="message && message.indexOf('successfully') > -1">{{message}}</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        angular.module('userApp', [])
+            .controller('UserController', function($scope) {
+                // Инициализация массива пользователей
+                $scope.users = [];
+                for (let i = 1; i <= 20; i++) {
+                    $scope.users.push({
+                        id: Date.now() + i,
+                        username: 'mperry' + i,
+                        first_name: 'Matthew',
+                        last_name: 'Perry',
+                        email: 'user' + i + '@mail.com',
+                        user_type: 'Administrator',
+                        password: 'Password1'
+                    });
+                }
+
+                $scope.user = {};
+                $scope.editMode = false;
+                $scope.showForm = false;
+                $scope.message = '';
+
+                $scope.toggleForm = function() {
+                    $scope.showForm = !$scope.showForm;
+                    if (!$scope.showForm) {
+                        $scope.reset();
+                    }
+                };
+
+                $scope.save = function() {
+                    if ($scope.user.password !== $scope.user.confirmPassword) {
+                        $scope.message = 'Passwords do not match.';
+                        return;
+                    }
+
+                    if ($scope.editMode) {
+                        let index = $scope.users.findIndex(u => u.id === $scope.user.id);
+                        if (index !== -1) {
+                            $scope.users[index] = angular.copy($scope.user);
+                            $scope.message = 'User updated successfully';
+                        }
+                    } else {
+                        if ($scope.users.find(u => u.username === $scope.user.username)) {
+                            $scope.message = 'Username must be unique';
+                            return;
+                        }
+                        $scope.user.id = Date.now();
+                        $scope.users.push(angular.copy($scope.user));
+                        $scope.message = 'User created successfully';
+                    }
+                    $scope.reset();
+                };
+
+                $scope.edit = function(u) {
+                    $scope.user = angular.copy(u);
+                    $scope.editMode = true;
+                    $scope.showForm = true;
+                    $scope.message = '';
+                };
+
+                $scope.reset = function() {
+                    $scope.user = {};
+                    $scope.editMode = false;
+                    $scope.message = '';
+                };
+            });
+    </script>
+</body>
+
+</html>
