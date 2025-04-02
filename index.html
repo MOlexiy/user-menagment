@@ -183,18 +183,30 @@
                         <div class="form-group">
                             <label>Type*</label>
                             <select ng-model="user.user_type" required>
-                              <option value="Administrator">Administrator</option>
-                              <option value="User">User</option>
+                                <option value="" disabled selected>Select a type</option>
+                                <option value="Administrator">Administrator</option>
+                                <option value="User">User</option>
                             </select>
+                            <div class="user-form-error" ng-show="userForm.user_type.$error.required && userForm.$submitted">
+                                Type is required.
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Password*</label>
-                            <input type="password" ng-model="user.password" required>
+                            <input type="password" ng-model="user.password">
+                            <div class="user-form-error" ng-if="message === 'password_required'">
+                                Password is required.
+                            </div>
+                            <div class="user-form-error" ng-if="message === 'password_invalid'">
+                                Password must be at least 8 characters long and contain at least one letter and one number.
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Confirm Password*</label>
                             <input type="password" ng-model="user.confirmPassword" required>
-                            <div class="user-form-error" ng-show="user.password !== user.confirmPassword">Passwords do not match.</div>
+                            <div class="user-form-error" ng-show="user.password !== user.confirmPassword && userForm.$submitted">
+                                Passwords do not match.
+                            </div>
                         </div>
                         <button class="btn btn-primary" type="submit">{{ editMode ? 'Save' : 'Create' }}</button>
                         <button class="btn btn-secondary" type="button" ng-click="reset()">Reset</button>
@@ -236,8 +248,28 @@
                 };
 
                 $scope.save = function() {
+                    // Проверка на пустой пароль
+                    if (!$scope.user.password) {
+                        $scope.message = 'password_required';
+                        return;
+                    }
+
+                    // Проверка на соответствие пароля шаблону
+                    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+                    if (!passwordPattern.test($scope.user.password)) {
+                        $scope.message = 'password_invalid';
+                        return;
+                    }
+
+                    // Проверка на совпадение паролей
                     if ($scope.user.password !== $scope.user.confirmPassword) {
-                        $scope.message = 'Passwords do not match.';
+                        $scope.message = 'password_mismatch';
+                        return;
+                    }
+
+                    // Проверка на уникальность имени пользователя
+                    if (!$scope.editMode && $scope.users.find(u => u.username === $scope.user.username)) {
+                        $scope.message = 'Username must be unique';
                         return;
                     }
 
@@ -248,17 +280,13 @@
                             $scope.message = 'User updated successfully';
                         }
                     } else {
-                        if ($scope.users.find(u => u.username === $scope.user.username)) {
-                            $scope.message = 'Username must be unique';
-                            return;
-                        }
                         $scope.user.id = Date.now();
                         $scope.users.push(angular.copy($scope.user));
                         $scope.message = 'User created successfully';
                     }
+
                     $scope.reset();
                 };
-
                 $scope.edit = function(u) {
                     $scope.user = angular.copy(u);
                     $scope.editMode = true;
